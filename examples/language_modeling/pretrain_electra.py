@@ -18,7 +18,6 @@ if __name__ == '__main__':
 
     # hyperparameters sent by the client are passed as command-line arguments to the script
     parser.add_argument("--epochs", type=int, default=3)
-    parser.add_argument("--total_batch_size", type=int, default=256)
     parser.add_argument("--per_device_batch_size", type=int, default=32)
     parser.add_argument("--model_name_or_path", type=str)
 
@@ -45,35 +44,50 @@ if __name__ == '__main__':
         sequence_length = 512
 
     model = "small"
-    generator_divisor = 3
-
-    hidden_size = {"small": 512, "base": 768}
-    hidden_layers = {"small": 6, "base": 12}
-    attention_heads = {"small": 8, "base": 12}
+    generator_divisor = {"small": 4, "base": 3}
+    hidden_layers = {"small": 12, "base": 12}
+    embedding_size = {"small": 256, "base": 768}  # 128 for small in the original paper
+    hidden_size = {"small": 256, "base": 768}
+    intermediate_size = {"small": 1024, "base": 3072}
+    attention_heads = {"small": 4, "base": 12}
+    learning_rate = {"small": 5e-4, "base": 2e-4}
+    total_batch_size = {"small": 128, "base": 256}
 
     # It is easier to just use an existing one, but we may get better performance when training our own later
-    train_own_tokenizer = False
+    train_own_tokenizer = True
 
-    # IMPORTANT if we set the embedding_size to 128 instead of 768 we get problems if we run the tie_weights() function,
-    # the weights of the generator_lm_head (in_features) are changing,
-    # leading to dimension errors in matrix multiplication
-    # Thus all calls to tie_weights have been disabled. Is this a problem?
+    discriminator_config = {
+        "max_position_embeddings": sequence_length,
+        "num_hidden_layers": hidden_layers[model],
+        "embedding_size": embedding_size[model],
+        "hidden_size": hidden_size[model],
+        "num_attention_heads": attention_heads[model],
+        "intermediate_size": intermediate_size[model],
+    }
+    generator_config = discriminator_config.copy()
+
+    scale_down_num_layers = True
+    # Two ways of scaling down the generator
+    if scale_down_num_layers:  # just scale down the number of hidden layers
+        generator_config['num_hidden_layers'] = generator_config['num_hidden_layers'] // generator_divisor[model]
+    else:  # or scale down these three parameters, like described in the paper
+        # This doesn't work yet
+        # IMPORTANT if we set the embedding_size to 128 instead of 768 we get problems if we run the tie_weights() function,
+        # the weights of the generator_lm_head (in_features) are changing,
+        # leading to dimension errors in matrix multiplication
+        # Thus all calls to tie_weights have been disabled. Is this a problem?
+        # generator_config['embedding_size'] = generator_config['embedding_size'] // generator_divisor[model]
+        generator_config['hidden_size'] = generator_config['hidden_size'] // generator_divisor[model]
+        generator_config['intermediate_size'] = generator_config['intermediate_size'] // generator_divisor[model]
+        generator_config['num_attention_heads'] = generator_config['num_attention_heads'] // generator_divisor[model]
+
+    print("Generator", generator_config)
+    print("Discriminator", discriminator_config)
+
     model_args = LanguageModelingArgs(
         # for base version: electra paper says that the generator should be 1/3 of the discriminator's size
-        generator_config={
-            "max_position_embeddings": sequence_length,
-            "embedding_size": hidden_size[model],
-            "hidden_size": hidden_size[model],
-            "num_hidden_layers": hidden_layers[model] // generator_divisor,
-            "num_attention_heads": attention_heads[model],
-        },
-        discriminator_config={
-            "max_position_embeddings": sequence_length,
-            "embedding_size": hidden_size[model],
-            "hidden_size": hidden_size[model],
-            "num_hidden_layers": hidden_layers[model],
-            "num_attention_heads": attention_heads[model],
-        },
+        generator_config=generator_config,
+        discriminator_config=discriminator_config,
         reprocess_input_data=False,
         overwrite_output_dir=True,
         save_eval_checkpoints=True,
@@ -87,8 +101,8 @@ if __name__ == '__main__':
         num_train_epochs=args.epochs,
         eval_batch_size=args.per_device_batch_size * 2,
         train_batch_size=args.per_device_batch_size,
-        gradient_accumulation_steps=int(args.total_batch_size / args.per_device_batch_size),
-        learning_rate=2e-4,  # ELECTRA paper searched in 1e-4, 2e-4, 3e-4, 5e-4
+        gradient_accumulation_steps=total_batch_size[model] // args.per_device_batch_size,
+        learning_rate=learning_rate[model],  # ELECTRA paper searched in 1e-4, 2e-4, 3e-4, 5e-4
         warmup_steps=10_000,  # as specified in ELECTRA paper
         dataset_type="simple",
         vocab_size=30000,
