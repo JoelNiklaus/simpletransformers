@@ -17,8 +17,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # hyperparameters sent by the client are passed as command-line arguments to the script
-    parser.add_argument("--epochs", type=int, default=3)
-    parser.add_argument("--per_device_batch_size", type=int, default=32)
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--per_device_batch_size", type=int, default=16)  # maxiumum for V100 with 16GB memory
     parser.add_argument("--model_name_or_path", type=str)
 
     # data, model, and output directories
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     os.makedirs(data_dir, exist_ok=True)
     train_file, test_file = data_dir + "/train.txt", data_dir + "/test.txt"
 
-    run_on_sagemaker = True
+    run_on_sagemaker = False
     if run_on_sagemaker:
         import boto3
 
@@ -131,6 +131,7 @@ if __name__ == '__main__':
     else:
         prepare_data(data_dir, debug=True)
 
+    # TODO run training on additional datasets: posture, eurlex
     model = LanguageModelingModel(
         "electra",
         None,
