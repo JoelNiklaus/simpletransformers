@@ -465,9 +465,6 @@ class LanguageModelingModel:
         )
 
         self.save_model(output_dir, model=self.model)
-        if self.args.model_type == "electra":
-            self.save_discriminator()
-            self.save_generator()
         # model_to_save = self.model.module if hasattr(self.model, "module") else self.model
         # model_to_save.save_pretrained(output_dir)
         # self.tokenizer.save_pretrained(output_dir)
@@ -1553,7 +1550,7 @@ class LanguageModelingModel:
                 pass
 
     def save_discriminator(self, output_dir=None):
-        if self.args.model_type == "electra":
+        if self.args.model_type in ["electra", "longformer_electra"]:
             if not self.args.no_save:
                 if not output_dir:
                     output_dir = os.path.join(
@@ -1571,7 +1568,7 @@ class LanguageModelingModel:
             raise ValueError("Model must be of ElectraForLanguageModelingModel type")
 
     def save_generator(self, output_dir=None):
-        if self.args.model_type == "electra":
+        if self.args.model_type in ["electra", "longformer_electra"]:
             if not self.args.no_save:
                 if not output_dir:
                     output_dir = os.path.join(self.args.output_dir, "generator_model")
@@ -1621,7 +1618,7 @@ class LanguageModelingModel:
         if model and not self.args.no_save:
             # Take care of distributed/parallel training
             model_to_save = model.module if hasattr(model, "module") else model
-            if self.args.model_type in "electra":
+            if self.args.model_type in ["electra", "longformer_electra"]:
                 os.makedirs(os.path.join(output_dir, "generator_config"), exist_ok=True)
                 os.makedirs(
                     os.path.join(output_dir, "discriminator_config"), exist_ok=True
@@ -1632,6 +1629,8 @@ class LanguageModelingModel:
                 self.discriminator_config.save_pretrained(
                     os.path.join(output_dir, "discriminator_config")
                 )
+                self.save_discriminator()
+                self.save_generator()
             model_to_save.save_pretrained(output_dir)
             self.tokenizer.save_pretrained(output_dir)
             torch.save(self.args, os.path.join(output_dir, "training_args.bin"))
