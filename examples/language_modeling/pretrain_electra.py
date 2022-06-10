@@ -133,12 +133,12 @@ if __name__ == '__main__':
         prepare_data(data_dir, debug=False)
 
     # TODO run training on additional datasets: posture, eurlex
-    #  TODO log discriminator loss and generator loss for debugging purposes
+    # TODO log discriminator loss and generator loss for debugging purposes
     model = LanguageModelingModel(
         "electra",
         None,  # "electra", # Add last checkpoint here: TODO save both generator and discriminator
         # generator_name="", # Path to generator checkpoint
-        #  discriminator_name="", #Path to discriminator checkpoint
+        # discriminator_name="", # Path to discriminator checkpoint
         args=model_args,
         train_files=train_file if train_own_tokenizer else None,
         use_cuda=cuda_available
