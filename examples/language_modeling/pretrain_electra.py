@@ -18,7 +18,8 @@ if __name__ == '__main__':
 
     # hyperparameters sent by the client are passed as command-line arguments to the script
     parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--per_device_batch_size", type=int, default=16)  # maxiumum for V100 with 16GB memory
+    parser.add_argument("--per_device_batch_size", type=int,
+                        default=64)  # small: 64, base: 16, maxiumum for V100 with 16GB memory
     parser.add_argument("--model_name_or_path", type=str)
 
     # data, model, and output directories
@@ -50,7 +51,7 @@ if __name__ == '__main__':
     hidden_size = {"small": 256, "base": 768}
     intermediate_size = {"small": 1024, "base": 3072}
     attention_heads = {"small": 4, "base": 12}
-    learning_rate = {"small": 5e-4, "base": 2e-4}
+    learning_rate = {"small": 5e-4, "base": 2e-4}  # ELECTRA paper searched in 1e-4, 2e-4, 3e-4, 5e-4
     total_batch_size = {"small": 128, "base": 256}
 
     # It is easier to just use an existing one, but we may get better performance when training our own later
@@ -102,7 +103,7 @@ if __name__ == '__main__':
         eval_batch_size=args.per_device_batch_size * 2,
         train_batch_size=args.per_device_batch_size,
         gradient_accumulation_steps=total_batch_size[model] // args.per_device_batch_size,
-        learning_rate=learning_rate[model],  # ELECTRA paper searched in 1e-4, 2e-4, 3e-4, 5e-4
+        learning_rate=learning_rate[model],
         warmup_steps=10_000,  # as specified in ELECTRA paper
         dataset_type="simple",
         vocab_size=30000,
@@ -129,12 +130,15 @@ if __name__ == '__main__':
         s3.Bucket(args.bucket_name).download_file(os.path.join(args.model_dir, train_file), train_file)
         s3.Bucket(args.bucket_name).download_file(os.path.join(args.model_dir, test_file), test_file)
     else:
-        prepare_data(data_dir, debug=True)
+        prepare_data(data_dir, debug=False)
 
     # TODO run training on additional datasets: posture, eurlex
+    #  TODO log discriminator loss and generator loss for debugging purposes
     model = LanguageModelingModel(
         "electra",
-        None,
+        None,  # "electra", # Add last checkpoint here: TODO save both generator and discriminator
+        # generator_name="", # Path to generator checkpoint
+        #  discriminator_name="", #Path to discriminator checkpoint
         args=model_args,
         train_files=train_file if train_own_tokenizer else None,
         use_cuda=cuda_available
