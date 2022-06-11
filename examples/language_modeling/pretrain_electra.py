@@ -133,7 +133,6 @@ if __name__ == '__main__':
         prepare_data(data_dir, debug=False)
 
     # TODO run training on additional datasets: posture, eurlex
-    # TODO log discriminator loss and generator loss for debugging purposes
     model = LanguageModelingModel(
         "electra",
         None,  # "electra", # Add last checkpoint here: TODO save both generator and discriminator

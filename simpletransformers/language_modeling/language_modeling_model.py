@@ -828,9 +828,10 @@ class LanguageModelingModel:
                     #     print(np.argmax(preds, axis=2))
 
                 if args.n_gpu > 1:
-                    loss = (
-                        loss.mean()
-                    )  # mean() to average on multi-gpu parallel training
+                    loss = (loss.mean())  # mean() to average on multi-gpu parallel training
+                    if args.model_type == "electra":
+                        g_loss = (g_loss.mean())
+                        d_loss = (d_loss.mean())
 
                 current_loss = loss.item()
 
@@ -841,6 +842,9 @@ class LanguageModelingModel:
 
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
+                    if args.model_type == "electra":
+                        g_loss = g_loss / args.gradient_accumulation_steps
+                        d_loss = d_loss / args.gradient_accumulation_steps
 
                 if args.fp16:
                     scaler.scale(loss).backward()
@@ -885,6 +889,8 @@ class LanguageModelingModel:
                                     "global_step": global_step,
                                 }
                             )
+                            if args.model_type == "electra":
+                                wandb.log({"generator_loss": g_loss,"discriminator_loss": d_loss})
 
                     if args.save_steps > 0 and global_step % args.save_steps == 0:
                         # Save model checkpoint
@@ -1550,7 +1556,7 @@ class LanguageModelingModel:
                 pass
 
     def save_discriminator(self, output_dir=None):
-        if self.args.model_type in ["electra", "longformer_electra"]:
+        if self.args.model_type == "electra":
             if not self.args.no_save:
                 if not output_dir:
                     output_dir = os.path.join(
@@ -1568,7 +1574,7 @@ class LanguageModelingModel:
             raise ValueError("Model must be of ElectraForLanguageModelingModel type")
 
     def save_generator(self, output_dir=None):
-        if self.args.model_type in ["electra", "longformer_electra"]:
+        if self.args.model_type == "electra":
             if not self.args.no_save:
                 if not output_dir:
                     output_dir = os.path.join(self.args.output_dir, "generator_model")
@@ -1618,7 +1624,7 @@ class LanguageModelingModel:
         if model and not self.args.no_save:
             # Take care of distributed/parallel training
             model_to_save = model.module if hasattr(model, "module") else model
-            if self.args.model_type in ["electra", "longformer_electra"]:
+            if self.args.model_type == "electra":
                 os.makedirs(os.path.join(output_dir, "generator_config"), exist_ok=True)
                 os.makedirs(
                     os.path.join(output_dir, "discriminator_config"), exist_ok=True
