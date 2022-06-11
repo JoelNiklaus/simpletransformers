@@ -790,7 +790,7 @@ class LanguageModelingModel:
 
                 if args.fp16:
                     with amp.autocast():
-                        if args.model_type == "longformer":
+                        if args.model_type == "longformer" or args.use_longformer_electra:
                             outputs = model(inputs, attention_mask=None, labels=labels)
                         else:
                             outputs = (
@@ -806,7 +806,7 @@ class LanguageModelingModel:
                         else:
                             loss = outputs[0]
                 else:
-                    if args.model_type == "longformer":
+                    if args.model_type == "longformer" or args.use_longformer_electra:
                         outputs = model(inputs, attention_mask=None, labels=labels)
                     else:
                         outputs = (
@@ -890,7 +890,7 @@ class LanguageModelingModel:
                                 }
                             )
                             if args.model_type == "electra":
-                                wandb.log({"generator_loss": g_loss,"discriminator_loss": d_loss})
+                                wandb.log({"generator_loss": g_loss, "discriminator_loss": d_loss})
 
                     if args.save_steps > 0 and global_step % args.save_steps == 0:
                         # Save model checkpoint
@@ -1370,7 +1370,7 @@ class LanguageModelingModel:
                 if self.args.max_seq_length > 509 and self.args.model_type not in [
                     "longformer",
                     "bigbird",
-                ]:
+                ] and not self.args.use_longformer_electra:
                     self.args.max_seq_length = (
                         509
                         if bool(
@@ -1385,6 +1385,9 @@ class LanguageModelingModel:
                         )
                         else 510
                     )
+                else:
+                    self.args.max_seq_length -= special_tokens_count
+                    self.args.block_size -= special_tokens_count
                 return SimpleDataset(
                     tokenizer,
                     self.args,

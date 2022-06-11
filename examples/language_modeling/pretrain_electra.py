@@ -98,7 +98,7 @@ if __name__ == '__main__':
         evaluate_during_training_silent=False,
         evaluate_during_training_steps=1000,
         evaluate_during_training_verbose=True,
-        n_gpu=num_gpus,  # run with python -m torch.distributed.launch pretrain_electra.py
+        n_gpu=num_gpus,  # run with python -m torch.distributed.launch examples/language_modeling/pretrain_electra.py
         num_train_epochs=args.epochs,
         eval_batch_size=args.per_device_batch_size * 2,
         train_batch_size=args.per_device_batch_size,
