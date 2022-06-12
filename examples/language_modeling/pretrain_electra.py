@@ -13,13 +13,17 @@ from simpletransformers.language_modeling import (
 # TODO consider using methods from DeBERTa to improve it
 # TODO consider using unigram lm tokenizer: SentencePieceUnigramTokenizer
 
+# TODO evaluieren auf lexglue
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # hyperparameters sent by the client are passed as command-line arguments to the script
     parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--per_device_batch_size", type=int,
-                        default=64)  # small: 64, base: 16, maxiumum for V100 with 16GB memory
+    # maximum for V100 with 16GB memory
+    # max_seq_len: 512: small: 64, base: 16
+    # max_seq_len: 4096: small: 4, base: 1
+    parser.add_argument("--per_device_batch_size", type=int, default=4)
     parser.add_argument("--model_name_or_path", type=str)
 
     # data, model, and output directories
