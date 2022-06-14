@@ -882,15 +882,16 @@ class LanguageModelingModel:
                             )
                         logging_loss = tr_loss
                         if args.wandb_project or self.is_sweeping:
-                            wandb.log(
-                                {
-                                    "Training loss": current_loss,
-                                    "lr": scheduler.get_last_lr()[0],
-                                    "global_step": global_step,
-                                }
-                            )
+                            log_dict = {
+                                "Training loss": current_loss,
+                                "lr": scheduler.get_last_lr()[0],
+                                "global_step": global_step,
+                            }
                             if args.model_type == "electra":
-                                wandb.log({"generator_loss": g_loss, "discriminator_loss": d_loss})
+                                log_dict["generator_loss"] = g_loss
+                                log_dict["discriminator_loss"] = d_loss
+                                log_dict["loss"] = loss
+                            wandb.log(log_dict)
 
                     if args.save_steps > 0 and global_step % args.save_steps == 0:
                         # Save model checkpoint

@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument("--epochs", type=int, default=10)
     # maximum for V100 with 16GB memory
     # max_seq_len: 512: small: 64, base: 16
-    # max_seq_len: 4096: small: 4, base: 1
+    # max_seq_len: 4096: small: 4 (somehow 8 for 8 GPUs), base: 1
     parser.add_argument("--per_device_batch_size", type=int, default=4)
     parser.add_argument("--model_name_or_path", type=str)
 
