@@ -37,5 +37,6 @@ setup(
         "wandb>=0.10.32",
         "streamlit",
         "sentencepiece",
+        "torch",
     ],
 )
